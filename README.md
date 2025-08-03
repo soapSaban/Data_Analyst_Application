@@ -57,11 +57,11 @@ Download reports as PDF
 📂 File Support
 FileType	TextExtraction	Data Analysis	OCR Support
 PDF	              ✅	           ✅	      ✅ (beta)
-Word(DOCX)	        ✅	           ✅	       -
-Excel(XLSX)	        ✅	           ✅	       -
+Word(DOCX)	      ✅	           ✅	       -
+Excel(XLSX)	      ✅	           ✅	       -
 CSV	              ✅	           ✅	       -
 Text(TXT)	        ✅	           ✅	       -
-Images(JPG/PNG)     ✅	            -	      ✅
+Images(JPG/PNG)   ✅	            -	      ✅
 
 🤖 AI Models Supported
 MistralAI/Mixtral-8x7B-Instruct-v0.1 (default, recommended)
@@ -83,3 +83,4 @@ Powered by Together.ai
 Built with Streamlit
 
 Uses LangChain for document processing
+
