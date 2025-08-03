@@ -19,6 +19,10 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain.docstore.document import Document
 
+# Configure Tesseract path (UPDATE FOR YOUR SYSTEM)
+pytesseract.pytesseract.tesseract_cmd = r'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'  # Windows
+# pytesseract.pytesseract.tesseract_cmd = '/usr/local/bin/tesseract'  # Mac/Linux
+
 # Load environment variables
 load_dotenv()
 TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY")
@@ -40,14 +44,6 @@ if not TOGETHER_API_KEY:
     st.error("⚠️ TOGETHER_API_KEY not found! Please add it to your .env file.")
     st.stop()
 
-# Available serverless models
-SERVERLESS_MODELS = [
-    "mistralai/Mixtral-8x7B-Instruct-v0.1",
-    "mistralai/Mistral-7B-Instruct-v0.1",
-    "togethercomputer/LLaMA-2-7B-32K",
-    "meta-llama/Llama-3-8b-chat-hf"
-]
-
 # Tabs
 tab1, tab2, tab3, tab4 = st.tabs(["📄 Summary", "📊 Visualizations", "💬 Chat", "⬇ Download Report"])
 
@@ -62,17 +58,6 @@ if 'vectordb' not in st.session_state:
     st.session_state.vectordb = None
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
-if 'selected_model' not in st.session_state:
-    st.session_state.selected_model = SERVERLESS_MODELS[0]  # Default to first model
-
-# Model selection
-st.sidebar.subheader("AI Model Settings")
-st.session_state.selected_model = st.sidebar.selectbox(
-    "Select AI Model",
-    SERVERLESS_MODELS,
-    index=0
-)
-max_tokens = st.sidebar.slider("Max Response Length", 100, 2000, 500)
 
 # --- Extract text from files ---
 def extract_text(file):
@@ -89,7 +74,7 @@ def extract_text(file):
                             img = page.to_image(resolution=300).original.convert("L")
                             text += pytesseract.image_to_string(img) + "\n"
                         except Exception as img_e:
-                            st.warning(f"Couldn't extract text from image in PDF page: {str(img_e)}")
+                            st.warning(f"Couldn't extract text from PDF image: {str(img_e)}")
         elif file.name.endswith(".docx"):
             doc = DocxDocument(file)
             for para in doc.paragraphs:
@@ -110,9 +95,11 @@ def extract_text(file):
         elif file.name.lower().endswith((".jpg", ".jpeg", ".png")):
             try:
                 image = Image.open(file).convert("L")
+                st.image(image, caption="Uploaded Image", width=300)  # Show preview
                 text += pytesseract.image_to_string(image)
+                st.success("Text extracted successfully!")
             except Exception as img_e:
-                st.error(f"Error processing image {file.name}: {str(img_e)}")
+                st.error(f"⚠️ OCR Error: {str(img_e)}. Please ensure Tesseract is installed.")
     except Exception as e:
         st.error(f"Error reading {file.name}: {str(e)}")
     return text
@@ -149,7 +136,7 @@ def together_ai(prompt, max_tokens=500):
     }
     
     payload = {
-        "model": st.session_state.selected_model,
+        "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
         "messages": [{"role": "user", "content": prompt}],
         "max_tokens": max_tokens,
         "temperature": 0.7,
@@ -220,7 +207,7 @@ if uploaded_files:
                 
                 Content:
                 {all_text[:10000]}"""
-                st.session_state.summary = together_ai(summary_prompt, max_tokens)
+                st.session_state.summary = together_ai(summary_prompt)
         st.write(st.session_state.summary)
 
         if not st.session_state.insights and all_text.strip():
@@ -230,7 +217,7 @@ if uploaded_files:
                 
                 Content:
                 {all_text[:10000]}"""
-                st.session_state.insights = together_ai(insights_prompt, max_tokens)
+                st.session_state.insights = together_ai(insights_prompt)
         st.write("### 🔍 Key Insights & Recommendations")
         st.write(st.session_state.insights)
 
@@ -276,7 +263,7 @@ with tab3:
                 - Format your answer clearly"""
                 
                 with st.spinner("Generating answer..."):
-                    answer = together_ai(chat_prompt, max_tokens)
+                    answer = together_ai(chat_prompt)
                     st.session_state.chat_history.append((question, answer))
             except Exception as e:
                 st.error(f"Error searching documents: {str(e)}")
@@ -317,7 +304,7 @@ with tab4:
                 c.drawString(72, height - 110, "Summary:")
                 c.setFont("Helvetica", 12)
                 text = c.beginText(72, height - 130)
-                for line in wrap(st.session_state.summary, width=100)[:40]:
+                for line in wrap(st.session_state.summary, width=100)[:40]:  # Limit lines
                     text.textLine(line)
                 c.drawText(text)
 
@@ -326,7 +313,7 @@ with tab4:
                 c.drawString(72, height - 300, "Key Insights:")
                 c.setFont("Helvetica", 12)
                 text = c.beginText(72, height - 320)
-                for line in wrap(st.session_state.insights, width=100)[:40]:
+                for line in wrap(st.session_state.insights, width=100)[:40]:  # Limit lines
                     text.textLine(line)
                 c.drawText(text)
 
@@ -337,14 +324,14 @@ with tab4:
                     c.drawString(72, height - 72, "Data Preview")
                     
                     y_position = height - 100
-                    for name, df in st.session_state.dataframes[:2]:
+                    for name, df in st.session_state.dataframes[:2]:  # Limit to 2 dataframes
                         c.setFont("Helvetica-Bold", 12)
                         c.drawString(72, y_position, f"Data from: {name}")
                         y_position -= 20
                         
                         c.setFont("Helvetica", 10)
                         text = c.beginText(72, y_position)
-                        for line in str(df.head()).split('\n')[:10]:
+                        for line in str(df.head()).split('\n')[:10]:  # Limit lines
                             text.textLine(line)
                         c.drawText(text)
                         y_position -= 150
