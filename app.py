@@ -1,4 +1,5 @@
 import os
+import torch
 import streamlit as st
 import pandas as pd
 import pdfplumber
@@ -27,11 +28,18 @@ pytesseract.pytesseract.tesseract_cmd = r'C:\\Program Files\\Tesseract-OCR\\tess
 load_dotenv()
 TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY")
 
+def get_embeddings():
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    return HuggingFaceEmbeddings(
+        model_name="sentence-transformers/all-MiniLM-L6-v2",
+        model_kwargs={'device': device},
+        encode_kwargs={'normalize_embeddings': True}
+    )
 # Initialize embeddings safely
 try:
-    embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+    embedding_model = get_embeddings()
 except Exception as e:
-    st.error(f"Failed to initialize embeddings: {str(e)}")
+    st.error(f"Embeddings failed: {str(e)}")
     st.stop()
 
 # Streamlit config
@@ -353,4 +361,5 @@ with tab4:
 
 # Add some spacing at the bottom
 st.markdown("<br><br>", unsafe_allow_html=True)
+
 
