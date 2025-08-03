@@ -1,5 +1,4 @@
 import os
-import torch
 import streamlit as st
 import pandas as pd
 import pdfplumber
@@ -13,9 +12,6 @@ from reportlab.pdfgen import canvas
 from dotenv import load_dotenv
 import requests
 from textwrap import wrap
-import sqlite3
-import chromadb
-from chromadb.config import Settings
 
 # LangChain and Embeddings
 from langchain_community.vectorstores import Chroma
@@ -23,12 +19,9 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain.docstore.document import Document
 
-# Configure Tesseract path
-try:
-    pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'  # Windows
-    # pytesseract.pytesseract.tesseract_cmd = '/usr/local/bin/tesseract'  # Mac/Linux
-except Exception as e:
-    st.warning(f"Tesseract configuration warning: {str(e)}")
+# Configure Tesseract path (UPDATE FOR YOUR SYSTEM)
+pytesseract.pytesseract.tesseract_cmd = r'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'  # Windows
+# pytesseract.pytesseract.tesseract_cmd = '/usr/local/bin/tesseract'  # Mac/Linux
 
 # Load environment variables
 load_dotenv()
@@ -36,17 +29,14 @@ TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY")
 
 # Initialize embeddings safely
 try:
-    embedding_model = HuggingFaceEmbeddings(
-        model_name="sentence-transformers/all-MiniLM-L6-v2",
-        model_kwargs={'device': 'cpu'}
-    )
+    embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 except Exception as e:
     st.error(f"Failed to initialize embeddings: {str(e)}")
     st.stop()
 
 # Streamlit config
 st.set_page_config(page_title="AI Data Analyst", layout="wide")
-st.title("📊 AI Data Analyst (Free Version)")
+st.title("📊 AI Data Analyst by Tanmay")
 st.write("Upload files and interact with your data using an AI agent powered by Together.ai.")
 
 # Check for API key
@@ -69,7 +59,7 @@ if 'vectordb' not in st.session_state:
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
 
-# --- Enhanced Text Extraction ---
+# --- Extract text from files ---
 def extract_text(file):
     text = ""
     try:
@@ -105,7 +95,7 @@ def extract_text(file):
         elif file.name.lower().endswith((".jpg", ".jpeg", ".png")):
             try:
                 image = Image.open(file).convert("L")
-                st.image(image, caption="Uploaded Image", width=300)
+                st.image(image, caption="Uploaded Image", width=300)  # Show preview
                 text += pytesseract.image_to_string(image)
                 st.success("Text extracted successfully!")
             except Exception as img_e:
@@ -113,32 +103,6 @@ def extract_text(file):
     except Exception as e:
         st.error(f"Error reading {file.name}: {str(e)}")
     return text
-
-# --- VectorDB Initialization with Fallback ---
-def initialize_vectordb(docs):
-    try:
-        # Try DuckDB backend first (works on Streamlit Cloud)
-        chroma_settings = Settings(
-            chroma_db_impl="duckdb+parquet",
-            persist_directory=None,
-            anonymized_telemetry=False
-        )
-        
-        vectordb = Chroma.from_documents(
-            documents=docs,
-            embedding=embedding_model,
-            client_settings=chroma_settings
-        )
-        st.toast("Vector database initialized successfully!", icon="✅")
-        return vectordb
-        
-    except Exception as e:
-        st.warning(f"⚠️ Falling back to in-memory storage (SQLite v{sqlite3.sqlite_version}): {str(e)}")
-        return Chroma.from_documents(
-            documents=docs,
-            embedding=embedding_model,
-            client_settings=Settings(is_persistent=False)
-        )
 
 # --- Generate charts ---
 def generate_chart(df):
@@ -225,15 +189,11 @@ if uploaded_files:
             chunks = splitter.split_text(all_text)
             docs = [Document(page_content=chunk) for chunk in chunks]
 
-            st.session_state.vectordb = initialize_vectordb(docs)
-            
-            # Debug info
-            with st.expander("🔍 Debug Info"):
-                st.write(f"SQLite version: {sqlite3.sqlite_version}")
-                if st.session_state.vectordb:
-                    st.write(f"VectorDB type: {type(st.session_state.vectordb._client).__name__}")
-                    st.write(f"Documents stored: {len(st.session_state.vectordb.get()['documents'])}")
-
+            st.session_state.vectordb = Chroma.from_documents(
+                documents=docs,
+                embedding=embedding_model,
+                persist_directory=None
+            )
         except Exception as e:
             st.error(f"Error creating vector database: {str(e)}")
 
@@ -272,7 +232,7 @@ with tab2:
             charts = generate_chart(df)
             if charts:
                 cols = st.columns(2)
-                for i, chart in enumerate(charts[:2]):
+                for i, chart in enumerate(charts[:2]):  # Show max 2 charts
                     with cols[i % 2]:
                         st.image(chart)
                         st.download_button(
@@ -344,7 +304,7 @@ with tab4:
                 c.drawString(72, height - 110, "Summary:")
                 c.setFont("Helvetica", 12)
                 text = c.beginText(72, height - 130)
-                for line in wrap(st.session_state.summary, width=100)[:40]:
+                for line in wrap(st.session_state.summary, width=100)[:40]:  # Limit lines
                     text.textLine(line)
                 c.drawText(text)
 
@@ -353,7 +313,7 @@ with tab4:
                 c.drawString(72, height - 300, "Key Insights:")
                 c.setFont("Helvetica", 12)
                 text = c.beginText(72, height - 320)
-                for line in wrap(st.session_state.insights, width=100)[:40]:
+                for line in wrap(st.session_state.insights, width=100)[:40]:  # Limit lines
                     text.textLine(line)
                 c.drawText(text)
 
@@ -364,14 +324,14 @@ with tab4:
                     c.drawString(72, height - 72, "Data Preview")
                     
                     y_position = height - 100
-                    for name, df in st.session_state.dataframes[:2]:
+                    for name, df in st.session_state.dataframes[:2]:  # Limit to 2 dataframes
                         c.setFont("Helvetica-Bold", 12)
                         c.drawString(72, y_position, f"Data from: {name}")
                         y_position -= 20
                         
                         c.setFont("Helvetica", 10)
                         text = c.beginText(72, y_position)
-                        for line in str(df.head()).split('\n')[:10]:
+                        for line in str(df.head()).split('\n')[:10]:  # Limit lines
                             text.textLine(line)
                         c.drawText(text)
                         y_position -= 150
