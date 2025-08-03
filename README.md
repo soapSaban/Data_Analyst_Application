@@ -60,7 +60,7 @@ PDF	              ✅	           ✅	      ✅ (beta)
 Word(DOCX)	      ✅	           ✅	       -
 Excel(XLSX)	      ✅	           ✅	       -
 CSV	              ✅	           ✅	       -
-Text(TXT)	       ✅	           ✅	       -
+Text(TXT)	      ✅	           ✅	       -
 Images(JPG/PNG)   ✅	            -	      ✅
 
 🤖 AI Models Supported
@@ -83,6 +83,7 @@ Powered by Together.ai
 Built with Streamlit
 
 Uses LangChain for document processing
+
 
 
 
