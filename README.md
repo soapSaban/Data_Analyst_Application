@@ -14,15 +14,17 @@
 
 ### Prerequisites
 - Python 3.8+
+- Tesseract OCR (for image/PDF text extraction)
+  ```bash
+  # Windows: Download installer from https://github.com/UB-Mannheim/tesseract/wiki
+  # Mac: brew install tesseract
+  # Linux: sudo apt install tesseract-ocr
 - Together.ai API key (get it [here](https://together.ai))
 - Create a `.env` file:
    ```env
    TOGETHER_API_KEY=your_key_here
 ### Installation
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/ai-data-analyst.git
-cd ai-data-analyst
 
 # Create and activate virtual environment (recommended)
 python -m venv venv
@@ -32,6 +34,10 @@ venv\Scripts\activate    # Windows
 
 # Install dependencies
 pip install -r requirements.txt
+
+#Running
+Import Tesseract-OCR/teserract.exe file path into the code
+type < streamlit run app.py > in the terminal and smash Enter
 
 🛠️ How It Works
 Upload Files (PDF, DOCX, CSV, XLSX, TXT, JPG/PNG)
@@ -51,11 +57,11 @@ Download reports as PDF
 📂 File Support
 FileType	TextExtraction	Data Analysis	OCR Support
 PDF	              ✅	           ✅	      ✅ (beta)
-Word(DOCX)	      ✅	           ✅	       -
-Excel(XLSX)	      ✅	           ✅	       -
+Word(DOCX)	        ✅	           ✅	       -
+Excel(XLSX)	        ✅	           ✅	       -
 CSV	              ✅	           ✅	       -
-Text(TXT)	      ✅	           ✅	       -
-Images(JPG/PNG)   ✅	            -	        ✅
+Text(TXT)	        ✅	           ✅	       -
+Images(JPG/PNG)     ✅	            -	      ✅
 
 🤖 AI Models Supported
 MistralAI/Mixtral-8x7B-Instruct-v0.1 (default, recommended)
