@@ -310,9 +310,9 @@ with tab4:
 
                 # Insights section
                 c.setFont("Helvetica-Bold", 14)
-                c.drawString(72, height - 300, "Key Insights:")
+                c.drawString(72, height - 490, "Key Insights:")
                 c.setFont("Helvetica", 12)
-                text = c.beginText(72, height - 320)
+                text = c.beginText(72, height - 510)
                 for line in wrap(st.session_state.insights, width=100)[:40]:  # Limit lines
                     text.textLine(line)
                 c.drawText(text)
@@ -353,3 +353,4 @@ with tab4:
 
 # Add some spacing at the bottom
 st.markdown("<br><br>", unsafe_allow_html=True)
+
